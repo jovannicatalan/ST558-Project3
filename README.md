@@ -11,4 +11,4 @@ You’ll get to choose your own data set...
 running your app).
 
 ## <code>runGitHub()</code> code:
-• The shiny::runGitHub() code that we can copy and paste into RStudio to run your app.
+• <code>shiny::runGitHub('jovannicatalan/ST558-Project3', 'jovannicatalan')</code>
