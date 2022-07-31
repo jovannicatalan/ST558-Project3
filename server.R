@@ -120,52 +120,153 @@ shinyServer(function(input, output, session) {
    predict(rfFit(), newData)
  })
  
- output$predResponse <- renderText({
+ output$predResponse <- renderText(
    predictedResponse()
- })
+ )
  
  
  ## Numerical Summaries
- output$numSumm <- renderText({
+ numSumm <- eventReactive(input$numType ,{
    # Center
-   mean <-mean(CO2$uptake)
-   median(CO2$uptake)
-   summary(CO2$uptake)
-   # Spread
-   sd(CO2$uptake)
-   var(CO2$uptake)
-   # 2 var.s
-   cor(CO2$uptake, CO2$conc)
-   cov(CO2$uptake, CO2$conc)
+   df <- data.frame(index = 1)
+   if (sum(grepl( "mean", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$mean <- mean(CO2[ , input$summVars])
+   }
+   if (sum(grepl( "median", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$median <- median(CO2[, input$summVars])
+   }
+   if (sum(grepl( "IQR", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$IQR <- IQR(CO2[, input$summVars])
+   }
+   if (sum(grepl( "sd", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$sd <- sd(CO2[, input$summVars])
+   }
+   if (sum(grepl( "variance", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$variance <- var(CO2[, input$summVars])
+   }
+   if (sum(grepl( "correlation", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$correlation <- cor(CO2$uptake, CO2$conc)
+   }
+   if (sum(grepl( "covariance", input$selectedNumSumm2, fixed = TRUE)) == 1) {
+     df$covariance <- cov(CO2$uptake, CO2$conc)
+   }
+   if (sum(grepl( "contingency", input$selectedNumSumm1, fixed = TRUE)) == 1) {
+     updateCheckboxGroupInput(session, "selectedNumSumm1", label = NULL, choices = NULL,
+                              selected = character(0), inline = FALSE)
+     df <- table(CO2[input$summVars])
+   } else{
+     updateCheckboxGroupInput(session, "selectedNumSumm2", label = NULL, choices = NULL,
+                              selected = character(0), inline = FALSE)
+     df <- df[-1]
+   }
+ })
+ 
+ output$numSumm <- renderTable({
+   numSumm()
  })
  
  # Graphical Summaries
+ plot <- eventReactive(input$plot, {
+   if(!is.null(input$plotType2) && input$plotType2 == "Histogram"){
+     # Histogram
+     g <- ggplot(CO2, aes_string(x=input$summVars)) +
+       geom_histogram(fill= "darkseagreen") +
+       labs(title = paste0(input$summVars, " Histogram"), y = input$summVars) +
+       coord_flip()
+   }
+   
+   if(!is.null(input$plotType1) && input$plotType1 == "BarPlot"){
+    # Bar Plot
+     g <- ggplot(CO2, aes_string(x=(input$summVars))) +
+       geom_bar(fill= "darkseagreen") +
+       labs(title = paste0(input$summVars, " BarPlot"), x = input$summVars) +
+       coord_flip()
+   }
+   if(!is.null(input$plotType2) && input$plotType2 == "BoxPlot"){
+     # Box Plot
+     g <- ggplot(CO2, aes_string(y=input$summVars)) +
+       geom_boxplot(color ="green", fill="darkseagreen") +
+       labs(title = paste0(input$summVars, "BoxPlot"), x = input$summVars) +
+       theme(axis.ticks.x = element_blank(),
+             axis.text.x = element_blank())
+   }
+   
+    if(!is.null(input$plotType2) && input$plotType2 == "ScatterPlot") {
+     # CO2 uptake vs. conc. scatter plot
+     g <- ggplot(CO2, aes_string(x = "conc", y="uptake")) +
+       geom_point(color = "darkorange") +
+       labs(title = "Concentration v. Uptake", x = "conc", y = "uptake")
+    }
+   updateRadioButtons(session, "plotType1", selected = character(0))
+   updateRadioButtons(session, "plotType2", selected = character(0))
+   g
+ })
+ 
  output$graphSumm <- renderPlot({
-   # Histogram
-   ggplot(CO2, aes(y=uptake)) +
-     geom_histogram() +
-     coord_flip()
-   ggplot(CO2, aes(y=uptake)) +
-     geom_histogram(aes(color = Plant)) +
-     coord_flip()
-   
-   # Bar Plot
-   ggplot(CO2, aes(y=uptake)) +
-     geom_bar() +
-     coord_flip()
-   ggplot(CO2, aes(y=uptake)) +
-     geom_bar(aes(color = Plant)) +
-     coord_flip()
-   
-   # Box Plot
-   ggplot(CO2, aes(y=uptake)) +
-     geom_boxplot(color ="green", fill="darkseagreen") +
-     theme(axis.ticks.x = element_blank(),
-           axis.text.x = element_blank()) 
-            
-   # CO2 uptake vs. conc. scatter plot
-   ggplot(CO2, aes(x=conc, y=uptake)) +
-     geom_point()
+   plot()
+ })
+ 
+ filteredTable <- eventReactive(input$getTable, {
+   tab <- ""
+   if(!is.null(input$tableVars)){
+     tab <- as_tibble(CO2) %>%
+              select(input$tableVars)
+     
+     if(!is.null(input$groupbyVars)){
+       tab <- as_tibble(CO2) %>%
+               select(input$tableVars) %>%
+               group_by(input$groupbyVars)
+       if(!is.null(input$filterBy)){
+           if(input$filterBy == "Treatment"){
+             tab <- as_tibble(CO2) %>%
+                     select(input$tableVars) %>%
+                     group_by(input$groupbyVars) %>%
+                     filter(Treatment == input$filterByVarsTreat)
+           }
+           if(input$filterBy == "Type"){
+             tab <- as_tibble(CO2) %>%
+                     select(input$tableVars) %>%
+                     group_by(input$groupbyVars) %>%
+                     filter(Type == input$filterByVarsType)
+           }
+           if(input$filterBy == "Plant"){
+             tab <- as_tibble(CO2) %>%
+                     select(input$tableVars) %>%
+                     group_by(input$groupbyVars) %>%
+                     filter(Plant == input$filterByVarsPlant)
+           }
+       }
+     } else {
+       if(!is.null(input$filterBy)){
+         if(input$filterBy == "Treatment"){
+           tab <- as_tibble(CO2) %>%
+             select(input$tableVars) %>%
+             group_by(input$groupbyVars) %>%
+             filter(Treatment == input$filterByVarsTreat)
+         }
+         if(input$filterBy == "Type"){
+           tab <- as_tibble(CO2) %>%
+             select(input$tableVars) %>%
+             group_by(input$groupbyVars) %>%
+             filter(Type == input$filterByVarsType)
+         }
+         if(input$filterBy == "Plant"){
+           tab <- as_tibble(CO2) %>%
+             select(input$tableVars) %>%
+             group_by(input$groupbyVars) %>%
+             filter(Plant == input$filterByVarsPlant)
+         }
+       }
+     }
+   }
+   # Clear selections and return table
+   updateRadioButtons(session, "groupbyVars", selected = NULL)
+   updateRadioButtons(session, "filterBy", selected = NULL)
+   tab
+ })
+ 
+ output$tableSummary <- renderTable({
+   filteredTable()
  })
  
 
