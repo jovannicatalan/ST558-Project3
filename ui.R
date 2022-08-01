@@ -48,7 +48,7 @@ shinyUI(fluidPage(
                titlePanel("Let's Explore The Data!"),
                sidebarLayout(
                  sidebarPanel(
-                             h3("Summary Selections"),
+                             h3("Numerical Summaries"),
                              radioButtons("summVars", label = "Select Variables For Summaries", choices = c("Plant", "Type", "Treatment", "conc", "uptake"), inline = TRUE),
                              br(),
                              conditionalPanel("input.summVars=='Plant' || input.summVars=='Type' || input.summVars=='Treatment'", 
@@ -59,6 +59,7 @@ shinyUI(fluidPage(
                              ),
                              actionButton("numType", "Get Numerical Summaries"),
                              br(),
+                             h3("Graphical Summaries"),
                              conditionalPanel("input.summVars=='Plant' || input.summVars=='Type' || input.summVars=='Treatment' || input.summVars=='conc'", 
                                               radioButtons("plotType1", "Select Plot Type To Display", choices = c("BarPlot")),
                              ),
@@ -70,7 +71,7 @@ shinyUI(fluidPage(
                              br(),
                              h3("Data Table Selections"),
                              checkboxGroupInput("tableVars", "Select Variables For Table", choices = c("Plant", "Type", "Treatment", "conc", "uptake")),
-                             checkboxGroupInput("groupbyVars", "Select Variables to Group By", choices = c("Plant", "Type", "Treatment", "conc")),
+                             radioButtons("groupbyVars", "Select Variables to Group By", choices = c("Plant", "Type", "Treatment", "conc")),
                              checkboxGroupInput("filterBy", "Select Variable to Filter By (Select ONLY 1)", choices = c("Treatment", "Type", "Plant")),
                              conditionalPanel("input.filterBy =='Treatment'",
                                               radioButtons("filterByVarsTreat", "Select Treatment Values To Filter By", choices = c("chilled", "nonchilled")),
@@ -136,6 +137,8 @@ shinyUI(fluidPage(
                           sidebarLayout(
                             sidebarPanel(
                               checkboxGroupInput("vars", label = "Select Variables For Model Fitting (Use all by default)", choices = c("Plant", "Type", "Treatment", "conc"), inline = TRUE),
+                              h5("Response = uptake"),
+                              br(),
                               radioButtons("p", "Proportion For Training", choices = seq(.1,.9,by=.1), inline = TRUE),
                               radioButtons("cvNumFolds", "Specify CV Fold Number", choices = c(2, 3, 4, 5), inline = TRUE),
                               actionButton("fit", label = "Fit Models")
@@ -181,7 +184,7 @@ shinyUI(fluidPage(
                               "- Only variables used for model fitting will apply",
                               br(),
                               br(),
-                              strong("Predicted uptake: "),
+                              strong("Predicted Response(uptake): "),
                               br(),
                               textOutput("predResponse")
                             )
@@ -199,9 +202,20 @@ shinyUI(fluidPage(
                sidebarLayout(
                  sidebarPanel(
                    checkboxGroupInput("colsToRemove", label = "Remove Columns", choices = c("Plant", "Type", "Treatment", "conc", "uptake")),
-                   checkboxInput("filterByTreatment", label = strong("Check to filter by Treatment")),
-                   conditionalPanel("input.filterByTreatment==1",
-                                    radioButtons("treatmentFilter", label = "Filter By Treatment", choices = c("chilled", "nonchilled"))),
+                   checkboxInput("filterBy2", label = strong("Check to filter table by selection")),
+                   conditionalPanel("input.filterBy2 == 1",
+                                    radioButtons("selectedFilterBy", "Select Variable to Filter By", choices = c("Treatment", "Type", "Plant"), selected = NULL),
+                                    conditionalPanel("input.selectedFilterBy =='Treatment'",
+                                                     radioButtons("filterByVarsTreat2", "Select Treatment Values To Filter By", choices = c("chilled", "nonchilled"), selected = NULL),
+                                    ),
+                                    conditionalPanel("input.selectedFilterBy=='Type'",
+                                                     radioButtons("filterByVarsType2", "Select Type Values To Filter By", choices = c("Quebec", "Mississippi"), selected = NULL),
+                                    ),
+                                    conditionalPanel("input.selectedFilterBy=='Plant'",
+                                                     radioButtons("filterByVarsPlant2", "Select Plant Values To Filter By", choices = c("Qn1", "Qn2", "Qn3", "Qc1", "Qc3", "Qc2", "Mn3", "Mn2", "Mn1", "Mc2", "Mc3", "Mc1"), selected = NULL),
+                                    )
+                                    )
+                   ,
                    actionButton("save", "Save Table To File")
                  ),
                  

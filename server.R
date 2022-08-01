@@ -18,14 +18,28 @@ library(sjPlot)
 shinyServer(function(input, output, session) {
   
  dataTable <- reactive({
-   if(input$filterByTreatment == 1){
-     table <- as_tibble(CO2) %>% 
-       select(-input$colsToRemove) %>%
-       filter(Treatment == input$treatmentFilter)
-    } else {
+   table <- as_tibble(CO2)
+   if(input$filterBy2){
+     if(input$selectedFilterBy == "Treatment"){
+       table <- as_tibble(CO2) %>%
+         select(-input$colsToRemove) %>%
+         filter(Treatment == input$filterByVarsTreat2)
+     }
+     if(input$selectedFilterBy == "Type"){
+       table <- as_tibble(CO2) %>%
+         select(-input$colsToRemove) %>%
+         filter(Type == input$filterByVarsType2)
+     }
+     if(input$selectedFilterBy == "Plant"){
+       table <- as_tibble(CO2) %>%
+         select(-input$colsToRemove) %>%
+         filter(Plant == input$filterByVarsPlant2)
+     }
+   } else {
       table <- as_tibble(CO2) %>% 
      select(-input$colsToRemove)
-    }
+   }
+   table
  })
  
  
@@ -106,11 +120,15 @@ shinyServer(function(input, output, session) {
      )
    )
  })
+ 
  output$treeSplits <- renderPlot({
-   plot(treeFit())
+   tree1 <- treeFit()
+   base::plot(tree1)
  })
+ 
  output$rfVarImport <- renderPlot({
-   plot(varImp(rfFit()))
+   rf1 <- varImp(rfFit())
+   base::plot(rf1)
  })
  
  
@@ -154,7 +172,7 @@ shinyServer(function(input, output, session) {
      updateCheckboxGroupInput(session, "selectedNumSumm1", label = NULL, choices = NULL,
                               selected = character(0), inline = FALSE)
      df <- table(CO2[input$summVars])
-   } else{
+   } else if(!is.null(input$selectedNumSumm2)){
      updateCheckboxGroupInput(session, "selectedNumSumm2", label = NULL, choices = NULL,
                               selected = character(0), inline = FALSE)
      df <- df[-1]
@@ -167,6 +185,7 @@ shinyServer(function(input, output, session) {
  
  # Graphical Summaries
  plot <- eventReactive(input$plot, {
+   g <- NULL
    if(!is.null(input$plotType2) && input$plotType2 == "Histogram"){
      # Histogram
      g <- ggplot(CO2, aes_string(x=input$summVars)) +
@@ -199,7 +218,9 @@ shinyServer(function(input, output, session) {
     }
    updateRadioButtons(session, "plotType1", selected = character(0))
    updateRadioButtons(session, "plotType2", selected = character(0))
-   g
+   if(!is.null(g)){
+     g
+   }
  })
  
  output$graphSumm <- renderPlot({
