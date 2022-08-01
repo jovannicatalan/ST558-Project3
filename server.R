@@ -12,7 +12,7 @@ library(dplyr)
 library(randomForest)
 library(rpart)
 library(caret)
-library(sjPlot)
+library(ggplot2)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -186,38 +186,42 @@ shinyServer(function(input, output, session) {
  # Graphical Summaries
  plot <- eventReactive(input$plot, {
    g <- NULL
-   if(!is.null(input$plotType2) && input$plotType2 == "Histogram"){
-     # Histogram
-     g <- ggplot(CO2, aes_string(x=input$summVars)) +
-       geom_histogram(fill= "darkseagreen") +
-       labs(title = paste0(input$summVars, " Histogram"), y = input$summVars) +
-       coord_flip()
+   if(input$summVars == "uptake"){
+     
+     if(!is.null(input$plotType2) && input$plotType2 == "Histogram"){
+       # Histogram
+       if(!is.null(input$fillBy)){
+         g <- ggplot(CO2, aes_string(x=input$summVars)) +
+           geom_histogram(aes_string(fill= input$fillBy)) +
+           labs(title = paste0(input$summVars, " Histogram"))
+       }
+     }
+     if(!is.null(input$plotType2) && input$plotType2 == "BoxPlot"){
+       # Box Plot
+       if(!is.null(input$fillBy)){
+         g <- ggplot(CO2, aes_string(y=input$summVars, x = input$fillBy)) +
+           geom_boxplot(color ="darkseagreen", aes_string(fill=input$fillBy)) +
+           labs(title = paste0("BoxPlot ", "(", input$summVars, ")")) +
+           theme(axis.ticks.x = element_blank(),
+                 axis.text.x = element_blank())
+       }
+     }
+     
+     if(!is.null(input$plotType2) && input$plotType2 == "ScatterPlot") {
+       # CO2 uptake vs. conc. scatter plot
+       g <- ggplot(CO2, aes_string(x = "conc", y="uptake")) +
+         geom_point(aes_string(color=input$fillBy)) +
+         labs(title = "Uptake v. Concentration", x = "conc", y = "uptake")
+     }
+   } else {
+     if(!is.null(input$plotType1) && input$plotType1 == "BarPlot"){
+       # Bar Plot
+       g <- ggplot(CO2, aes_string(x=(input$summVars))) +
+         geom_bar(fill= "darkseagreen") +
+         labs(title = paste0(input$summVars, " BarPlot"), x = input$summVars) +
+         coord_flip()
+     }
    }
-   
-   if(!is.null(input$plotType1) && input$plotType1 == "BarPlot"){
-    # Bar Plot
-     g <- ggplot(CO2, aes_string(x=(input$summVars))) +
-       geom_bar(fill= "darkseagreen") +
-       labs(title = paste0(input$summVars, " BarPlot"), x = input$summVars) +
-       coord_flip()
-   }
-   if(!is.null(input$plotType2) && input$plotType2 == "BoxPlot"){
-     # Box Plot
-     g <- ggplot(CO2, aes_string(y=input$summVars)) +
-       geom_boxplot(color ="green", fill="darkseagreen") +
-       labs(title = paste0(input$summVars, "BoxPlot"), x = input$summVars) +
-       theme(axis.ticks.x = element_blank(),
-             axis.text.x = element_blank())
-   }
-   
-    if(!is.null(input$plotType2) && input$plotType2 == "ScatterPlot") {
-     # CO2 uptake vs. conc. scatter plot
-     g <- ggplot(CO2, aes_string(x = "conc", y="uptake")) +
-       geom_point(color = "darkorange") +
-       labs(title = "Concentration v. Uptake", x = "conc", y = "uptake")
-    }
-   updateRadioButtons(session, "plotType1", selected = character(0))
-   updateRadioButtons(session, "plotType2", selected = character(0))
    if(!is.null(g)){
      g
    }

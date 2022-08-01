@@ -49,7 +49,7 @@ shinyUI(fluidPage(
                sidebarLayout(
                  sidebarPanel(
                              h3("Numerical Summaries"),
-                             radioButtons("summVars", label = "Select Variables For Summaries", choices = c("Plant", "Type", "Treatment", "conc", "uptake"), inline = TRUE),
+                             radioButtons("summVars", label = "Select Variables For Summaries", choiceValues = c("Plant", "Type", "Treatment", "conc", "uptake"), choiceNames = c("Plant", "Type", "Treatment", "conc", "uptake (Response)"), inline = TRUE),
                              br(),
                              conditionalPanel("input.summVars=='Plant' || input.summVars=='Type' || input.summVars=='Treatment'", 
                                                checkboxGroupInput("selectedNumSumm1", "Select Numerical Summary To Display", choices = c("contingency"), inline = TRUE, selected = NULL ),
@@ -65,6 +65,9 @@ shinyUI(fluidPage(
                              ),
                              conditionalPanel("input.summVars=='uptake'", 
                                               radioButtons("plotType2", "Select Plot Type To Display (Scatterplot is between conc. v. uptake)", choices = c("Histogram", "BoxPlot", "ScatterPlot")),
+                             ),
+                             conditionalPanel("input.summVars=='uptake'", 
+                                              radioButtons("fillBy", "Select Categorical Variable For Groupings", choices = c("Plant", "Type", "Treatment")),
                              ),
                              actionButton("plot", "Plot Summary"), 
                              br(),
@@ -85,10 +88,11 @@ shinyUI(fluidPage(
                              actionButton("getTable", "Return Table")
                  ),
                  mainPanel(
-                             h2("Numerical/Graphical Summaries"),
-                             br(),
+                             h2("Numerical Summaries"),
                              br(),
                              tableOutput("numSumm"),
+                             br(),
+                             h2("Graphical Summaries"),
                              br(),
                              plotOutput("graphSumm"),
                              br(),
@@ -167,10 +171,9 @@ shinyUI(fluidPage(
                  tabPanel("Prediction",
                           sidebarLayout(
                             sidebarPanel(
-                              h1("Predict With Random Forest Model"),
+                              h1("Predict With Random Forest Model (Fit Model First!)"),
                               br(),
-                              br(),
-                              h4("Select or Input Predictor Values"),
+                              h4("-Select or Input Predictor Values"),
                               br(),
                               radioButtons("plantValue", "Plant", choices = c("Qn1", "Qn2", "Qn3", "Qc1", "Qc3", "Qc2", "Mn3", "Mn2", "Mn1", "Mc2", "Mc3", "Mc1"), inline = TRUE),
                               radioButtons("treatmentValue", "Treatment", choices = c("nonchilled", "chilled")),
